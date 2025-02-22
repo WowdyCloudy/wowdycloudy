@@ -54,13 +54,66 @@ several formats and offers different types of clusters referred to by the umbrel
 **Spark clusters**, one of these VM instances is special as the driver that executes the main program loop runs on it. The other instances are optional and host Spark executors that perform the actual
 data processing work. One instance hosts one Spark executor.
 
-The various cluster types can be configured and started in different ways such as via APIs, the Databricks CLI, or directly from the workspace UI. A developer's
+The various cluster types can be configured and started in different ways such as via APIs, the Databricks CLI, SDKs, or directly from the workspace UI. A developer's
 code artefact (like a notebook or JAR file) can often be executed on more than one Compute type, they are orthogonal. For example:
 - Notebooks can be attached to All-Purpose and Job Compute. Pythonic and SQL notebook cells can run on Serverless Compute and SQL cells on SQL Warehouses.
 - Job Compute tasks can be created from different assets such as notebooks, Python scripts/wheel packages, JAR files, SQL queries, DLT pipelines, or dbt projects.
 - Several Job Compute task types (such as Python scripts or JARs) can be executed on an All-Purpose cluster. SQL tasks can only be run on SQL warehouses.
 
 ## Compute Types
+The following table summarizes the major compute types on the Databricks platform. Some of them may not be available in all workspace regions or require activation/permission-granting by a user with
+elevated privileges:
+
+<table><thead>
+  <tr>
+    <th colspan="2">Compute Type</th>
+    <th>Summary</th>
+  </tr></thead>
+<tbody>
+<tr>
+    <td colspan="2">Classic <a href="https://docs.databricks.com/en/compute/use-compute.html" target="_blank" rel="noopener noreferrer">All-Purpose Compute</a></td>
+    <td>Collaborative data science on a shared cluster, ad-hoc analytical queries</td>
+  </tr>
+  <tr>
+    <td colspan="2">Classic <a href="https://docs.databricks.com/en/jobs/index.html" target="_blank" rel="noopener noreferrer">Jobs Compute</a></td>
+    <td>Procedural definition & orchestration of ETL pipelines, data processing via Apache Spark tasks</td>
+  </tr>
+  <tr>
+    <td colspan="2">Core/Pro/Advanced <a href="https://docs.databricks.com/en/delta-live-tables/index.html" target="_blank" rel="noopener noreferrer">Delta Live Tables</a></td>
+    <td>Declarative definitions of ETL pipelines, streaming workloads</td>
+  </tr>
+  <tr>
+    <td colspan="2">Classic/Pro <a href="https://docs.databricks.com/en/compute/sql-warehouse/index.html#use-sql-warehouses" target="_blank" rel="noopener noreferrer">SQL Warehouses</a></td>
+    <td>SQL/BI queries against lakehouse tables on SQL-optimized clusters</td>
+  </tr>
+  <tr>
+    <td colspan="2"><a href="https://docs.databricks.com/en/compute/pool-index.html" target="_blank" rel="noopener noreferrer">Instance Pools</a></td>
+    <td>Idle instances for reducing startup/scaling times for classic compute clusters</td>
+  </tr>
+  <tr>
+    <td rowspan="5">Serverless</td>
+    <td><a href="https://docs.databricks.com/en/compute/serverless/notebooks.html" target="_blank" rel="noopener noreferrer">All-Purpose Compute</a> <br> (= Interactive Serverless) </td>
+    <td>Supports SQL and Pythonic notebooks</td>
+  </tr>
+  <tr>
+    <td><a href="https://docs.databricks.com/en/jobs/run-serverless-jobs.html#" target="_blank" rel="noopener noreferrer">Jobs Compute</a> <br> (= Automated Serverless) </td>
+    <td>Supports Python notebook/script/wheel and dbt task types</td>
+  </tr>
+  <tr>
+    <td><a href="https://docs.databricks.com/en/compute/sql-warehouse/index.html#what-are-serverless-sql-warehouses" target="_blank" rel="noopener noreferrer">SQL Warehouses</a></td>
+    <td>Supports SQL editor/notebook queries</td>
+  </tr>
+  <tr>
+    <td><a href="https://docs.databricks.com/en/delta-live-tables/serverless-dlt.html#configure-a-serverless-delta-live-tables-pipeline" target="_blank" rel="noopener noreferrer">DLT Pipelines</a></td>
+    <td>Delta Live Tables pipeline updates</td>
+  </tr>
+  <tr>
+    <td><a href="https://docs.databricks.com/en/machine-learning/index.html" target="_blank" rel="noopener noreferrer">Mosaic AI</a></td>
+    <td>Machine Learning &amp; Gen AI tools</td>
+  </tr>
+</tbody></table>
+
+Most of the compute types available to a user are listed under the _Compute_ tab in the workspace UI's sidebar.
 
 ## Serverless versus Traditional Compute
 
