@@ -62,7 +62,7 @@ code artefact (like a notebook or JAR file) can often be executed on more than o
 
 ## Compute Types
 The following table summarizes the major compute types on the Databricks platform. Some of them may not be available in all workspace regions or require activation/permission-granting by a user with
-elevated privileges:
+elevated privileges: 
 
 <table><thead>
   <tr>
