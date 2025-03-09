@@ -166,3 +166,4 @@ and configuration properties of a workload, some of the most important ones are 
 ## Jobs versus All-Purpose Compute
 
 ## SQL Warehouses
+
