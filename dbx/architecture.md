@@ -116,6 +116,52 @@ elevated privileges:
 Most of the compute types available to a user are listed under the _Compute_ tab in the workspace UI's sidebar.
 
 ## Serverless versus Traditional Compute
+The previous table divides the Databricks Compute types into two main groups, namely **serverless** and **classic**/**traditional** services. This distinction affects various processing aspects
+and configuration properties of a workload, some of the most important ones are summarized below:
+
+<table><thead>
+  <tr>
+    <th></th>
+    <th>Classic Compute</th>
+    <th>Serverless Compute</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td>Compute resources</td>
+    <td>Launched into user's cloud account</td>
+    <td rowspan="2">Compute resources reside in Databricks's cloud account and settings/tuning are managed by the serverless autoscaler, <a href="https://docs.databricks.com/en/release-notes/serverless/index.html#supported-spark-config" target="_blank" rel="noopener noreferrer">most</a> Spark configuration properties cannot be manually modified</td>
+  </tr>
+  <tr>
+    <td>Configuration & Tuning</td>
+    <td>Manually by user, self-managed with more control</td>
+  </tr>
+  <tr>
+    <td>Costs</td>
+    <td>Workload Cost = Cloud Provider Costs + DBU Costs <br> More details on this <a href="https://github.com/WowdyCloudy/wowdycloudy/blob/main/dbx/costs.md" target="_blank" rel="noopener noreferrer">page</a> </td>
+    <td>Workload Cost = Only/mostly DBU Costs, cloud provider charges for secondary activities like data transfer might be incurred <br> Less transparency about DBU emission rates compared to Classic Compute </td>
+  </tr>
+  <tr>
+    <td>Photon Engine</td>
+    <td>Can be (de)activated, increases DBU consumption by a factor of 2.0 to 2.9 when enabled depending on cluster type & cloud provider</td>
+    <td>Always enabled</td>
+  </tr>
+  <tr>
+    <td>Idle Times</td>
+    <td>Node bootstrapping and scaling phases, typically several minutes <br> <a href="https://docs.databricks.com/en/compute/pool-index.html" target="_blank" rel="noopener noreferrer">Instance Pools</a> reduce such idle times</td>
+    <td>Shorter/no bootstrapping and scaling phases, instant compute</td>
+  </tr>
+  <tr>
+    <td>Availability</td>
+    <td>No restrictions</td>
+    <td>Some services like Serverless SQL Warehouses might not be available in every region</td>
+  </tr>
+  <tr>
+    <td>Runtimes</td>
+    <td>Chosen by user; support for all languages</td>
+    <td>Versionless, uses latest runtimes; Scala and R are not supported <br> More restrictions are mentioned <a href="https://docs.databricks.com/aws/en/compute/serverless/limitations" target="_blank" rel="noopener noreferrer">here</a></td>
+  </tr>
+</tbody>
+</table>
 
 ## Jobs versus All-Purpose Compute
 
