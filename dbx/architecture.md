@@ -62,7 +62,7 @@ code artefact (like a notebook or JAR file) can often be executed on more than o
 
 ## Compute Types
 The following table summarizes the major compute types on the Databricks platform. Some of them may not be available in all workspace regions or require activation/permission-granting by a user with
-elevated privileges: 
+elevated privileges:
 
 <table><thead>
   <tr>
@@ -163,7 +163,62 @@ and configuration properties of a workload, some of the most important ones are 
 </tbody>
 </table>
 
-## Jobs versus All-Purpose Compute
+## Job Compute versus All-Purpose Compute
+The main alternatives for running Spark workloads on Databricks are **Job** and **All-Purpose** Compute. Both services offer their own, eponymous cluster types, the following table summarizes their
+most important differences:
+
+<table><thead>
+  <tr>
+    <th></th>
+    <th>Job Clusters</th>
+    <th>All-Purpose Clusters</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td>Prototypical Use Cases</td>
+    <td>Data Pipeline orchestration, production ETL jobs, scheduled batch processing</td>
+    <td>Data Science workloads, iterative data analysis via notebooks, collaborative research, ad-hoc queries</td>
+  </tr>
+  <tr>
+    <td>Relationship</td>
+    <td colspan="2">All-Purpose clusters can be used in Job tasks, not recommended due to higher costs and concurrent use</td>
+  </tr>
+  <tr>
+    <td>Costs</td>
+    <td colspan="2">All-Purpose Compute tends to be more expensive, the DBU list prices are 1.8 to 3.6 times higher than Job Compute depending on the cloud provider and tier<br>
+    More information in this <a href="https://github.com/WowdyCloudy/wowdycloudy/blob/main/dbx/costs.md" target="_blank" rel="noopener noreferrer">article</a> </td>
+  </tr>
+  <tr>
+    <td>Creation</td>
+    <td>By a Job run, scheduled or ad-hoc launch</td>
+    <td>Manually by a user, ad-hoc launch</td>
+  </tr>
+  <tr>
+    <td>Termination</td>
+    <td>After Job run completion</td>
+    <td>Manual termination or auto-termination due to inactivity</td>
+  </tr>
+  <tr>
+    <td>Life Cycle</td>
+    <td>Coincides with a specific Job run, no interruptions/reuse </td>
+    <td>Continuous use, can be stopped and restarted to save DBU and cloud costs <br>
+     Data on local cluster storage is not persisted across restarts</td>
+  </tr>
+  <tr>
+    <td>Concurrent usage</td>
+    <td>A single user initiates a Job run</td>
+    <td>Cluster sharing supported, multiple users can execute multiple programs against the same cluster</td>
+  </tr>
+  <tr>
+    <td>Cluster IDs</td>
+    <td>New for each run</td>
+    <td>Stay constant across restarts</td>
+  </tr>
+</tbody>
+</table>
+
+## Job Compute Elements
+Coming soon
 
 ## SQL Warehouses
-
+Coming soon
