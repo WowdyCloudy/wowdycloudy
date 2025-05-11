@@ -217,8 +217,34 @@ most important differences:
 </tbody>
 </table>
 
-## Job Compute Elements
-Coming soon
+## Workflow and Job Elements
+The main orchestration unit for data processing is the Databricks **Job**. Existing jobs are listed and new ones can be created under the _Workflows_ sidebar in the workspace UI.
+A job consists of one or more smaller execution units called **Task**s which can depend on other job tasks.
+These tasks form a DAG that supports conditional execution logic and is visualized under the *Tasks* tab on a job's details page, the latter opens after clicking on a particular job name in the *Workflows* sidebar.
+
+Different types of tasks exist, a **task type** specifies the code artefact along with configuration options and the cluster type that will execute the task instructions.
+A new compute type had to be defined for each task until **cluster reuse** was [introduced](https://docs.databricks.com/en/release-notes/product/2022/january.html#improved-cluster-management-for-jobs-that-orchestrate-multiple-tasks).
+This feature allows a cluster to be shared between tasks of the same orchestrator job which reduces bootstrapping times, participating tasks do not need to be consecutive as their common cluster can be kept alive.
+Not all compute types may be available for a particular task type, for example:
+- Pythonic task types (Notebook and Python script/wheel) can be executed on Serverless, Classic, and All-Purpose Compute
+- JAR task types can be run on Classic and All-Purpose Compute
+- SQL and dbt task types can be executed on Serverless Compute and Pro SLQ Warehouses
+
+Each Databricks job has an ID which is unique in a particular workspace. Its execution results in a **Job Run** with associated task runs.
+Recent runs are listed under the _Job runs_ tab of the _Workflows_ sidebar and on a particular job's details page. Each job run
+is associated with the following core properties:
+- a job run ID
+- a start and end time, the start/end time coincides with the start/end of the job's first/last task
+- a result state (Succeeded, Skipped, Blocked, Failed, Cancelled, Timed Out, Error)
+- a trigger type that specifies the job invocation (Onetime, Onetime Retry, Continuous, Cron, File Arrival)
+- a run type (Job Run, Submit Run, Workflow Run)
+
+A **Task Run** has several execution metadata elements including:
+- a task run ID
+- a name, unique within a single job
+- a start and end time
+- a result state, its values are the same as the job run states above
+- any predecessor information if the task depends on others
 
 ## SQL Warehouses
 Coming soon
