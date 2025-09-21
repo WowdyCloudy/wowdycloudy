@@ -124,3 +124,25 @@ FROM
 ORDER BY
   approx_cost DESC
 ```
+
+## Notebook Queries
+```SQL
+SELECT statement_id, query_source.notebook_id, start_time AS execution_timestamp, executed_as, total_duration_ms, execution_duration_ms, total_task_duration_ms, result_fetch_duration_ms, read_rows, read_bytes, read_files, shuffle_read_bytes, spilled_local_bytes, written_rows, written_bytes, written_files
+FROM query_history
+WHERE query_source.notebook_id IS NOT null AND client_application = 'Databricks Notebooks'
+```
+
+## Power BI Queries
+```SQL
+SELECT * FROM query_history WHERE client_application = 'Power BI'
+```
+
+## Blocked Queries
+```SQL
+SELECT *, (coalesce(waiting_for_compute_duration_ms, 0) + coalesce(waiting_for_compute_duration_ms, 0)) AS wait_time
+FROM query_history
+WHERE client_application != 'Databricks Catalog Explorer'
+AND statement_text NOT like "%This is a system generated query%"
+AND (waiting_for_compute_duration_ms IS NOT null OR waiting_at_capacity_duration_ms IS NOT null)
+ORDER BY wait_time
+```
