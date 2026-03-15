@@ -109,6 +109,106 @@ d42b5ddfb81f6	14.42	DBU	    13.13	    USD         PREMIUM_SERVERLESS_SQL_COMPUTE
 
 ```
 
+## Databricks SQL Warehouse Queries
+
+Retrieving the latest configurations for all active SQL warehouses:
+```sql
+WITH wh_configs AS (
+    SELECT warehouse_id, warehouse_name, change_time, warehouse_type, warehouse_size, min_clusters, max_clusters, auto_stop_minutes, account_id, workspace_id, ROW_NUMBER() OVER (PARTITION BY account_id, workspace_id, warehouse_id ORDER BY change_time DESC) change, delete_time
+    FROM system.compute.warehouses
+    QUALIFY change = 1
+)
+
+SELECT * FROM wh_configs WHERE delete_time IS NULL
+```
+
+Sample result:
+```text
+warehouse_id	warehouse_name      change_time                 warehouse_type  warehouse_size  min_clusters	max_clusters    auto_stop_minutes	account_id	        workspace_id	change	delete_time
+89d81113221c9	MyActiveWarehouse   2026-02-12T07:49:28.534Z    SERVERLESS      2X_SMALL        1               2               5	                923dc6cb-...    	320000000000	1       null
+```
+
+The total warehouse costs and DBU consumption during the last 3 months can be determined with the following query:
+```sql
+WITH wh_usage AS (
+    SELECT CONCAT(u.account_id, '#', workspace_id) workspace, u.usage_metadata.warehouse_id, usage_quantity DBUs, (pricing.effective_list.default * usage_quantity) costs, currency_code currency
+    FROM system.billing.usage u JOIN system.billing.list_prices lp
+    ON u.sku_name = lp.sku_name AND price_start_time <= usage_start_time AND (price_end_time IS NULL OR price_end_time >= usage_start_time)
+    WHERE u.usage_metadata.warehouse_id IS NOT NULL AND usage_date >= CURRENT_DATE() - INTERVAL 3 MONTHS
+)
+
+SELECT warehouse_id, SUM(costs) total_cost, currency, SUM(DBUs) total_DBUs, workspace
+FROM wh_usage GROUP BY ALL
+```
+
+Sample result:
+```text
+warehouse_id	total_cost  currency    total_DBUs  workspace
+89d81113221c9	41.51238    USD         45.61       823dc6cb-...#52136160468298
+x42b5ddvb81f6	17.73463    USD         19.48       823dc6cb-...#52136160468298
+5ed4c14032123	11.61275    USD         12.76       823dc6cb-...#52136160468298
+```
+
+The query below aggregates the time spent per cluster size for each warehouse during the last three months:
+```sql
+WITH time_spent AS (
+    SELECT account_id, workspace_id, warehouse_id, cluster_count, TIMESTAMPDIFF(SECOND, event_time, LEAD(event_time) OVER (PARTITION BY account_id, workspace_id, warehouse_id ORDER BY event_time)) duration_sec
+    FROM system.compute.warehouse_events
+    WHERE event_time >= CURRENT_DATE() - INTERVAL 3 MONTHS
+)
+
+SELECT warehouse_id, cluster_count, ROUND(SUM(duration_sec) / 60, 2) minutes_running, CONCAT(account_id, '#', workspace_id) workspace
+FROM time_spent WHERE cluster_count > 0 GROUP BY ALL ORDER BY workspace, warehouse_id, minutes_running DESC
+```
+
+Sample result:
+```text
+warehouse_id	       cluster_count  minutes_running	workspace
+3ed4c14032113579       2              39.18             823dc6cb-...#52136160468298
+3ed4c14032113579       1              19.10	        823dc6cb-...#52136160468298
+8d81113021c93257       1              73.52	        823dc6cb-...#52136160468298
+8d81113021c93257       2              21.53	        823dc6cb-...#52136160468298
+d42b5ddfb81f6e38       1              29.17	        823dc6cb-...#52136160468298
+```
+
+An approximation for comparing the time warehouses spent on executing workloads versus being active but in an "idle"
+state:
+
+```sql
+DECLARE OR REPLACE VARIABLE interv_start STRING DEFAULT '2026-01-01'; -- adjust timeframe start
+DECLARE OR REPLACE VARIABLE interv_end STRING DEFAULT '2026-03-15'; -- adjust timeframe end
+
+WITH wh_queries AS ( -- warehouse queries within timeframe
+    SELECT account_id, workspace_id, compute.warehouse_id, statement_id, start_time, end_time
+    FROM system.query.history WHERE compute.warehouse_id IS NOT NULL AND execution_duration_ms IS NOT NULL AND start_time < end_time AND start_time >= interv_start AND end_time <= interv_end
+), wh_events AS ( -- warehouse events with their subsequent event timestamps
+    SELECT account_id, workspace_id, warehouse_id, event_time, LEAD(event_time) OVER (PARTITION BY account_id, workspace_id, warehouse_id ORDER BY event_time) next_event, cluster_count
+    FROM system.compute.warehouse_events
+    WHERE event_time BETWEEN(interv_start) AND (interv_end)
+), running_events AS ( -- warehouse events other than starting & stopped with overlapping queries
+    SELECT * EXCEPT (q.account_id, q.workspace_id, q.warehouse_id)
+    FROM wh_events e LEFT JOIN wh_queries q ON q.account_id = e.account_id AND q.workspace_id = e.workspace_id AND q.warehouse_id = e.warehouse_id AND start_time < next_event AND end_time > event_time
+    WHERE cluster_count > 0
+), queried_events AS ( -- one second slots with overlapping queries
+    SELECT CONCAT(account_id, '#', workspace_id) workspace, warehouse_id, explode(sequence(event_time, next_event, INTERVAL 1 SECOND)) slot_ts, date_trunc('SECOND', slot_ts) slot_sec, CASE WHEN start_time <= slot_ts AND end_time >= slot_ts THEN 1 ELSE 0 END covered
+    FROM running_events
+), agg_slots AS ( -- aggregating executed queries of seconds slots 
+    SELECT workspace, warehouse_id, slot_sec, SUM(covered) exec_queries FROM queried_events GROUP BY ALL
+)
+
+SELECT warehouse_id, ROUND((COUNT(exec_queries) FILTER (WHERE exec_queries = 0)) / 60, 2) minutes_active_but_idle, ROUND((COUNT(exec_queries) FILTER(WHERE exec_queries > 0)) / 60, 2) minutes_active_busy, workspace
+FROM agg_slots GROUP BY ALL
+```
+
+Sample result:
+```text
+warehouse_id        minutes_active_but_idle    minutes_active_busy        workspace
+8d81113021c93257    616.89                      68.81                      823dc6cb-...#52136160468298
+3ed4c14032113579    185.20                      6.80                       823dc6cb-...#52136160468298
+d42b5ddfb81f6e38    277.87                      16.54                      823dc6cb-...#52136160468298
+
+```
+
 ## Classic Compute Queries
 Coming Soon
 
