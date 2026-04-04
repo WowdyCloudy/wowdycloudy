@@ -210,8 +210,8 @@ d42b5ddfb81f6e38    277.87                      16.54                   123#456
 ```
 
 ## Cost Optimization Queries
-Identifying the most expensive serverless job runs (using list prices) which were **performance optimized** and may become cheaper after switching
-to the **standard performance mode**:
+The query below identifies the most expensive serverless job runs (using list prices) which were **performance optimized** and may become cheaper after switching
+to the **standard performance mode**. The performance mode can be switched on the Databricks workspace UI which is shown in [this screenshot](https://github.com/WowdyCloudy/wowdycloudy/blob/main/resources/images/PerformanceOptimized.png).
 
 ```sql
 WITH job_usage_opt AS (
