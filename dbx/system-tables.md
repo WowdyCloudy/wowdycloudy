@@ -43,7 +43,7 @@ Sample results:
 ```text
 sku_name	                                                        DBU_list_price	DBU_effective_price currency_code	price_start_time
 PREMIUM_SERVERLESS_REAL_TIME_INFERENCE_US_EAST_N_VIRGINIA	        0.07            0.07	            USD	                2013-01-01T00:00:00.000Z
-PREMIUM_DATABASE_SERVERLESS_COMPUTE_US_EAST_N_VIRGINIA                  0.40	        0.20	            USD	                2025-02-02T08:00:00.000Z
+PREMIUM_DATABASE_SERVERLESS_COMPUTE_US_EAST_N_VIRGINIA              0.40	        0.20	            USD	                2025-02-02T08:00:00.000Z
 PREMIUM_SERVERLESS_SQL_COMPUTE_US_EAST_N_VIRGINIA	                0.70	        0.70	            USD	                2022-05-12T00:00:00.000Z
 PREMIUM_ALL_PURPOSE_SERVERLESS_COMPUTE_US_EAST_N_VIRGINIA	        0.75	        0.75	            USD	                2025-04-30T23:59:59.000Z
 PREMIUM_SERVERLESS_REAL_TIME_INFERENCE_LAUNCH_US_EAST_N_VIRGINIA	0.07	        0.07	            USD	                2013-01-01T00:00:00.000Z
@@ -72,12 +72,12 @@ GROUP BY ALL ORDER BY total_cost DESC
 ```
 Sample result:
 ```text
-job_id	        job_run_id	total_usage usage_unit  total_cost  currency       sku_name                                        usage_start                     usage_end                    workspace
-7947669700	238850574	1.67	    DBU	        0.65        USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z	123#456
-7947669700	315090347	1.51	    DBU	        0.59	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z	123#456
-1072763629	847260285	0.25	    DBU	        0.10	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z	123#456
-10727636298	385370758	0.25	    DBU	        0.10	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T21:00:00.000Z	2026-01-08T22:00:00.000Z	123#456
-10727636298	906176848	0.25	    DBU	        0.09	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z	123#456
+job_id          job_run_id  total_usage usage_unit  total_cost  currency       sku_name                                        usage_start                     usage_end            workspace
+7947669700      238850574   1.67	    DBU	        0.65        USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z    123#456
+7947669700      315090347   1.51	    DBU	        0.59	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z    123#456
+1072763629      847260285   0.25	    DBU	        0.10	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z    123#456
+10727636298     385370758   0.25	    DBU	        0.10	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T21:00:00.000Z	2026-01-08T22:00:00.000Z    123#456
+10727636298     906176848   0.25	    DBU	        0.09	    USD	        PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND	2026-01-08T20:00:00.000Z	2026-01-08T21:00:00.000Z    123#456
 ```
 
 A query for aggregating costs per serverless DLT pipeline and warehouse for the last two months, subsuming multiple pipeline
@@ -144,9 +144,9 @@ FROM wh_usage GROUP BY ALL
 Sample result:
 ```text
 warehouse_id	total_cost  currency    total_DBUs  workspace
-89d81113221c9	41.51238    USD         45.61       823dc6cb-...#52136160468298
-x42b5ddvb81f6	17.73463    USD         19.48       823dc6cb-...#52136160468298
-5ed4c14032123	11.61275    USD         12.76       823dc6cb-...#52136160468298
+89d81113221c9	41.51238    USD         45.61       123#456
+x42b5ddvb81f6	17.73463    USD         19.48       123#456
+5ed4c14032123	11.61275    USD         12.76       123#456
 ```
 
 The query below aggregates the time spent per cluster size for each warehouse during the last three months:
@@ -163,12 +163,12 @@ FROM time_spent WHERE cluster_count > 0 GROUP BY ALL ORDER BY workspace, warehou
 
 Sample result:
 ```text
-warehouse_id	       cluster_count  minutes_running	workspace
-3ed4c14032113579       2              39.18             823dc6cb-...#52136160468298
-3ed4c14032113579       1              19.10	        823dc6cb-...#52136160468298
-8d81113021c93257       1              73.52	        823dc6cb-...#52136160468298
-8d81113021c93257       2              21.53	        823dc6cb-...#52136160468298
-d42b5ddfb81f6e38       1              29.17	        823dc6cb-...#52136160468298
+warehouse_id	       cluster_count  minutes_running   workspace
+3ed4c14032113579       2              39.18             123#456
+3ed4c14032113579       1              19.10             123#456
+8d81113021c93257       1              73.52             123#456
+8d81113021c93257       2              21.53             123#456
+d42b5ddfb81f6e38       1              29.17             123#456
 ```
 
 An approximation for comparing the time warehouses spent on executing workloads versus being active but in an "idle"
@@ -202,11 +202,42 @@ FROM agg_slots GROUP BY ALL
 
 Sample result:
 ```text
-warehouse_id        minutes_active_but_idle    minutes_active_busy        workspace
-8d81113021c93257    616.89                      68.81                      823dc6cb-...#52136160468298
-3ed4c14032113579    185.20                      6.80                       823dc6cb-...#52136160468298
-d42b5ddfb81f6e38    277.87                      16.54                      823dc6cb-...#52136160468298
+warehouse_id        minutes_active_but_idle    minutes_active_busy      workspace
+8d81113021c93257    616.89                      68.81                   123#456
+3ed4c14032113579    185.20                      6.80                    123#456
+d42b5ddfb81f6e38    277.87                      16.54                   123#456
 
+```
+
+## Cost Optimization Queries
+Identifying the most expensive serverless job runs (using list prices) which were **performance optimized** and may become cheaper after switching
+to the **standard performance mode**:
+
+```sql
+WITH job_usage_opt AS (
+ SELECT usage_metadata.job_name, usage_metadata.job_id, usage_metadata.job_run_id, identity_metadata.run_as,
+ CONCAT(account_id, '#', workspace_id) workspace, * EXCEPT(account_id, workspace_id, usage_metadata, identity_metadata, product_features)
+ FROM system.billing.usage
+ WHERE usage_metadata.job_id IS NOT NULL AND usage_metadata.job_run_id IS NOT NULL AND product_features.performance_target = "PERFORMANCE_OPTIMIZED"
+), job_usage_cost AS (
+ SELECT * EXCEPT (prices.sku_name), job_usage_opt.usage_quantity * prices.pricing.default costs
+ FROM job_usage_opt LEFT JOIN system.billing.list_prices prices ON job_usage_opt.sku_name = prices.sku_name
+ AND prices.price_start_time <= job_usage_opt.usage_start_time AND (prices.price_end_time >= job_usage_opt.usage_start_time OR prices.price_end_time IS NULL)
+)
+
+SELECT job_name, job_id, job_run_id, run_as, SUM(costs) costs, currency_code currency, SUM(usage_quantity) DBUs, sku_name, workspace
+FROM job_usage_cost
+GROUP BY ALL
+ORDER BY costs DESC
+```
+
+Sample output:
+```text
+job_name        job_id      job_run_id  run_as	    costs   currency    DBUs    sku_name                                        workspace
+ETL_Ingestion	684766970   238850      myself@     6.51    USD         16.0    PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND  123#456
+ETL_Ingestion	684766970   315090      myself@     5.91    USD         15.1    PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND  123#456
+Benchmarking	594751973   929337      myself@     0.63    USD         1.61    PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND  123#456
+ML_Training     484066270   773466      myself@     0.62    USD         1.50    PREMIUM_JOBS_SERVERLESS_COMPUTE_EUROPE_IRELAND  123#456
 ```
 
 ## Classic Compute Queries
