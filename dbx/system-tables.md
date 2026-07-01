@@ -14,6 +14,26 @@ CREATE VIEW your_catalog.your_schema.list_prices_view AS (
 Some system tables like `system.billing.usage` have a retention period, their contents can be preserved by appending their 
 records to a dedicated table periodically.
 
+## Genie Cost Queries
+The following query aggregates the Genie LLM costs by month and user:
+
+```SQL
+SELECT
+  DATE_FORMAT(usage_date, 'yyyy-MM') Month,
+  identity_metadata.run_as User,
+  SUM(usage_quantity) Total_DBUs,
+  SUM(usage_quantity * lp.pricing.effective_list.default) Genie_Cost,
+  currency_code Currency
+FROM system.billing.usage usage JOIN system.billing.list_prices lp
+    ON usage.sku_name = lp.sku_name AND usage.cloud = lp.cloud
+    AND price_start_time <= usage_start_time
+    AND (price_end_time IS NULL or price_end_time >= usage_start_time)
+WHERE billing_origin_product = UPPER('GENIE')
+GROUP BY ALL
+ORDER BY User, Month DESC
+```
+
+
 ## SKU Queries
 Collecting a list of region suffixes by filtering the SKU name for a widely available service, serverless job comput
 ```SQL
