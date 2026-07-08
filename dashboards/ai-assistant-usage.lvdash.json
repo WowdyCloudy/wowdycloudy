@@ -1,0 +1,437 @@
+{
+  "datasets": [
+    {
+      "name": "ec8638f3",
+      "displayName": "GenieMonthlyLLM",
+      "queryLines": [
+        "-- ToDo: Apply global filters below, unify\n",
+        "SELECT\n",
+        "  workspace_id,\n",
+        "  DATE_FORMAT(usage_date, 'yyyy-MM') Month,\n",
+        "  identity_metadata.run_as User,\n",
+        "  SUM(usage_quantity * lp.pricing.effective_list.default) Genie_Cost,\n",
+        "  currency_code Currency,\n",
+        "  SUM(usage_quantity) LLM_DBUs\n",
+        "FROM system.billing.usage usage JOIN system.billing.list_prices lp\n",
+        "    ON usage.sku_name = lp.sku_name AND usage.cloud = lp.cloud\n",
+        "    AND price_start_time <= usage_start_time\n",
+        "    AND (price_end_time IS NULL or price_end_time >= usage_start_time)\n",
+        "WHERE usage_date >= '2026-07-06' -- Genie Pricing Model change\n",
+        "AND billing_origin_product = UPPER('GENIE')\n",
+        "GROUP BY ALL\n",
+        "ORDER BY User, Month DESC"
+      ]
+    },
+    {
+      "name": "8ce8abd2",
+      "displayName": "GenieCodeDailyEvents",
+      "queryLines": [
+        "SELECT event_date, initiated_by, COUNT(*) AS interact_count\n",
+        "FROM system.access.assistant_events\n",
+        "WHERE event_date >= '2026-07-06' -- Genie Pricing Model change\n",
+        "GROUP BY ALL\n",
+        "ORDER BY event_date DESC"
+      ]
+    },
+    {
+      "name": "cb77fad0",
+      "displayName": "GenieDailyLLM",
+      "queryLines": [
+        "SELECT\n",
+        "  workspace_id,\n",
+        "  usage_date,\n",
+        "  identity_metadata.run_as User,\n",
+        "  SUM(usage_quantity * lp.pricing.effective_list.default) Genie_Cost,\n",
+        "  currency_code Currency,\n",
+        "  SUM(usage_quantity) LLM_DBUs\n",
+        "FROM system.billing.usage usage JOIN system.billing.list_prices lp\n",
+        "    ON usage.sku_name = lp.sku_name AND usage.cloud = lp.cloud\n",
+        "    AND price_start_time <= usage_start_time\n",
+        "    AND (price_end_time IS NULL or price_end_time >= usage_start_time)\n",
+        "WHERE usage_date >= '2026-07-06'  -- Genie Pricing Model change\n",
+        "AND billing_origin_product = UPPER('GENIE')\n",
+        "GROUP BY ALL\n",
+        "ORDER BY User, usage_date DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "1001fc48",
+      "displayName": "Genie LLM Usage",
+      "layout": [
+        {
+          "widget": {
+            "name": "monthy",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ec8638f3",
+                  "fields": [
+                    {
+                      "name": "Month",
+                      "expression": "`Month`"
+                    },
+                    {
+                      "name": "User",
+                      "expression": "`User`"
+                    },
+                    {
+                      "name": "Genie_Cost",
+                      "expression": "`Genie_Cost`"
+                    },
+                    {
+                      "name": "Currency",
+                      "expression": "`Currency`"
+                    },
+                    {
+                      "name": "workspace_id",
+                      "expression": "`workspace_id`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "headerHeight": 61,
+              "headerStyle": {
+                "foregroundColor": {
+                  "themeColorType": "selectionColor"
+                }
+              },
+              "bandedRows": {
+                "enabled": true
+              },
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": "Estimated monthly LLM consumption per user",
+                "description": "Costs are based on (effective) list prices"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Month",
+                    "useForSearch": false
+                  },
+                  {
+                    "fieldName": "User"
+                  },
+                  {
+                    "fieldName": "Genie_Cost",
+                    "displayName": "Costs"
+                  },
+                  {
+                    "fieldName": "Currency"
+                  },
+                  {
+                    "fieldName": "workspace_id",
+                    "displayName": "Workspace"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column",
+                    "field": {
+                      "index": 0
+                    }
+                  },
+                  {
+                    "by": "column",
+                    "field": {
+                      "index": 1
+                    }
+                  },
+                  {
+                    "by": "column",
+                    "field": {
+                      "index": 4
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 7,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "es",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cb77fad0",
+                  "fields": [
+                    {
+                      "name": "User",
+                      "expression": "`User`"
+                    },
+                    {
+                      "name": "daily(usage_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `usage_date`)"
+                    },
+                    {
+                      "name": "Genie_Cost",
+                      "expression": "`Genie_Cost`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": "Estimated daily LLM costs",
+                "description": "Costs are based on (effective) list prices"
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(usage_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Genie_Cost",
+                  "axis": {
+                    "title": "Costs",
+                    "hideLabels": false,
+                    "hideGrid": false,
+                    "labelAngle": 0
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "User",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "4dc81e7f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ec8638f3",
+                  "fields": [
+                    {
+                      "name": "LLM_DBUs",
+                      "expression": "`LLM_DBUs`"
+                    },
+                    {
+                      "name": "User",
+                      "expression": "`User`"
+                    },
+                    {
+                      "name": "Month",
+                      "expression": "`Month`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "Month",
+                "header": {
+                  "hideTitle": true
+                },
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Estimated monthly LLM DBU consumption per user\n"
+              },
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "LLM_DBUs",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "DBU Consumption"
+                },
+                "color": {
+                  "fieldName": "User",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 0,
+            "width": 5,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "number-of-assi",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "8ce8abd2",
+                  "fields": [
+                    {
+                      "name": "event_date",
+                      "expression": "`event_date`"
+                    },
+                    {
+                      "name": "sum(interact_count)",
+                      "expression": "SUM(`interact_count`)"
+                    },
+                    {
+                      "name": "initiated_by",
+                      "expression": "`initiated_by`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "initiated_by",
+                "header": {
+                  "title": "User"
+                },
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Number of daily Genie Code interactions grouped by user",
+                "showDescription": true,
+                "description": "Covers only user-submitted interactions"
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_date",
+                  "axis": {
+                    "title": "Event Date"
+                  },
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(interact_count)",
+                  "axis": {
+                    "hideTitle": false,
+                    "title": "# interactions"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "e62cf813",
+      "displayName": "Global Filters",
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
