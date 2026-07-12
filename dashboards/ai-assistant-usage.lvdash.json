@@ -1,42 +1,28 @@
 {
   "datasets": [
     {
-      "name": "ec8638f3",
-      "displayName": "GenieMonthlyLLM",
-      "queryLines": [
-        "-- ToDo: Apply global filters below, unify\n",
-        "SELECT\n",
-        "  workspace_id,\n",
-        "  DATE_FORMAT(usage_date, 'yyyy-MM') Month,\n",
-        "  identity_metadata.run_as User,\n",
-        "  SUM(usage_quantity * lp.pricing.effective_list.default) Genie_Cost,\n",
-        "  currency_code Currency,\n",
-        "  SUM(usage_quantity) LLM_DBUs\n",
-        "FROM system.billing.usage usage JOIN system.billing.list_prices lp\n",
-        "    ON usage.sku_name = lp.sku_name AND usage.cloud = lp.cloud\n",
-        "    AND price_start_time <= usage_start_time\n",
-        "    AND (price_end_time IS NULL or price_end_time >= usage_start_time)\n",
-        "WHERE usage_date >= '2026-07-06' -- Genie Pricing Model change\n",
-        "AND billing_origin_product = UPPER('GENIE')\n",
-        "GROUP BY ALL\n",
-        "ORDER BY User, Month DESC"
-      ]
-    },
-    {
       "name": "8ce8abd2",
       "displayName": "GenieCodeDailyEvents",
       "queryLines": [
-        "SELECT event_date, initiated_by, COUNT(*) AS interact_count\n",
-        "FROM system.access.assistant_events\n",
-        "WHERE event_date >= '2026-07-06' -- Genie Pricing Model change\n",
-        "GROUP BY ALL\n",
-        "ORDER BY event_date DESC"
+        "SELECT\n",
+        "  event_date,\n",
+        "  initiated_by,\n",
+        "  COUNT(*) AS interact_count\n",
+        "FROM\n",
+        "  system.access.assistant_events\n",
+        "WHERE\n",
+        "  event_date >= '2026-07-06' -- Genie Pricing Model change\n",
+        "GROUP BY\n",
+        "  ALL\n",
+        "ORDER BY\n",
+        "  event_date DESC"
       ]
     },
     {
       "name": "cb77fad0",
       "displayName": "GenieDailyLLM",
       "queryLines": [
+        "-- ToDo: Add filters below\n",
         "SELECT\n",
         "  workspace_id,\n",
         "  usage_date,\n",
@@ -44,14 +30,24 @@
         "  SUM(usage_quantity * lp.pricing.effective_list.default) Genie_Cost,\n",
         "  currency_code Currency,\n",
         "  SUM(usage_quantity) LLM_DBUs\n",
-        "FROM system.billing.usage usage JOIN system.billing.list_prices lp\n",
-        "    ON usage.sku_name = lp.sku_name AND usage.cloud = lp.cloud\n",
-        "    AND price_start_time <= usage_start_time\n",
-        "    AND (price_end_time IS NULL or price_end_time >= usage_start_time)\n",
-        "WHERE usage_date >= '2026-07-06'  -- Genie Pricing Model change\n",
-        "AND billing_origin_product = UPPER('GENIE')\n",
-        "GROUP BY ALL\n",
-        "ORDER BY User, usage_date DESC"
+        "FROM\n",
+        "  system.billing.usage usage\n",
+        "    JOIN system.billing.list_prices lp\n",
+        "      ON usage.sku_name = lp.sku_name\n",
+        "      AND usage.cloud = lp.cloud\n",
+        "      AND price_start_time <= usage_start_time\n",
+        "      AND (\n",
+        "        price_end_time IS NULL\n",
+        "        or price_end_time >= usage_start_time\n",
+        "      )\n",
+        "WHERE\n",
+        "  usage_date >= '2026-07-06' -- Genie Pricing Model change\n",
+        "  AND UPPER(billing_origin_product) = 'GENIE'\n",
+        "GROUP BY\n",
+        "  ALL\n",
+        "ORDER BY\n",
+        "  User,\n",
+        "  usage_date DESC"
       ]
     }
   ],
@@ -67,19 +63,19 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "ec8638f3",
+                  "datasetName": "cb77fad0",
                   "fields": [
                     {
-                      "name": "Month",
-                      "expression": "`Month`"
+                      "name": "monthly(usage_date)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
                     },
                     {
                       "name": "User",
                       "expression": "`User`"
                     },
                     {
-                      "name": "Genie_Cost",
-                      "expression": "`Genie_Cost`"
+                      "name": "sum(Genie_Cost)",
+                      "expression": "SUM(`Genie_Cost`)"
                     },
                     {
                       "name": "Currency",
@@ -90,7 +86,21 @@
                       "expression": "`workspace_id`"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`User`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`workspace_id`"
+                    }
+                  ]
                 }
               }
             ],
@@ -115,14 +125,15 @@
               "encodings": {
                 "columns": [
                   {
-                    "fieldName": "Month",
-                    "useForSearch": false
+                    "fieldName": "monthly(usage_date)",
+                    "useForSearch": false,
+                    "displayName": "Month"
                   },
                   {
                     "fieldName": "User"
                   },
                   {
-                    "fieldName": "Genie_Cost",
+                    "fieldName": "sum(Genie_Cost)",
                     "displayName": "Costs"
                   },
                   {
@@ -261,29 +272,29 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "ec8638f3",
+                  "datasetName": "cb77fad0",
                   "fields": [
                     {
-                      "name": "LLM_DBUs",
-                      "expression": "`LLM_DBUs`"
+                      "name": "sum(LLM_DBUs)",
+                      "expression": "SUM(`LLM_DBUs`)"
                     },
                     {
                       "name": "User",
                       "expression": "`User`"
                     },
                     {
-                      "name": "Month",
-                      "expression": "`Month`"
+                      "name": "monthly(usage_date)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
               "facet": {
                 "type": "wrap",
-                "fieldName": "Month",
+                "fieldName": "monthly(usage_date)",
                 "header": {
                   "hideTitle": true
                 },
@@ -300,17 +311,21 @@
               "widgetType": "pie",
               "encodings": {
                 "angle": {
-                  "fieldName": "LLM_DBUs",
+                  "fieldName": "sum(LLM_DBUs)",
                   "scale": {
                     "type": "quantitative"
                   },
                   "format": {
                     "type": "number-plain",
-                    "abbreviation": "compact",
+                    "abbreviation": "none",
                     "decimalPlaces": {
                       "type": "max",
                       "places": 2
-                    }
+                    },
+                    "hideGroupSeparator": false
+                  },
+                  "axis": {
+                    "hideTitle": true
                   },
                   "displayName": "DBU Consumption"
                 },
@@ -321,7 +336,11 @@
                   }
                 },
                 "label": {
-                  "show": false
+                  "show": true,
+                  "text": {
+                    "fieldName": "sum(LLM_DBUs)",
+                    "displayName": "DBU Consumption"
+                  }
                 }
               },
               "data": {
