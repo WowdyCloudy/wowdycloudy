@@ -13,7 +13,7 @@ The system tables that get queried are:
 - system.access.assistant_events
 
 ## Installation
-Download the JSON file **ai-assistant-usage.lvdash.json** that is included in this folder or paste its JSON content to 
+Download the JSON file [ai-assistant-usage.lvdash.json](./ai-assistant-usage.lvdash.json) that is included in this folder or paste its JSON content to 
 a local file on your computer with a similar naming pattern. 
 
 In a Databricks workspace, open the **Dashboards** tab on the left sidebar. Click on the "Create dashboard" button 
