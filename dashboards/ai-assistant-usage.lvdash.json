@@ -1,26 +1,55 @@
 {
   "datasets": [
     {
+      "name": "5603f28c",
+      "displayName": "Workspaces",
+      "queryLines": [
+        "SELECT DISTINCT\n",
+        "  workspace_id AS workspace_filter\n",
+        "FROM\n",
+        "  system.billing.usage\n",
+        "WHERE\n",
+        "  usage_date >= '2026-07-06' -- pricing model change\n",
+        "  AND workspace_id IS NOT NULL"
+      ]
+    },
+    {
       "name": "8ce8abd2",
       "displayName": "GenieCodeDailyEvents",
       "queryLines": [
         "SELECT\n",
+        "  workspace_id,\n",
         "  event_date,\n",
         "  initiated_by,\n",
         "  COUNT(*) AS interact_count\n",
         "FROM\n",
         "  system.access.assistant_events\n",
         "WHERE\n",
-        "  event_date >= '2026-07-06' -- Genie Pricing Model change\n",
+        "  event_date >= '2026-07-06' -- pricing model change\n",
+        "  AND (\n",
+        "    array_contains(:workspace_filter, workspace_id)\n",
+        "    OR :workspace_filter IS NULL\n",
+        "  )\n",
         "GROUP BY\n",
-        "  ALL\n",
-        "ORDER BY\n",
-        "  event_date DESC"
+        "  ALL"
+      ],
+      "parameters": [
+        {
+          "displayName": "workspace_filter",
+          "keyword": "workspace_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        }
       ]
     },
     {
       "name": "cb77fad0",
-      "displayName": "GenieDailyLLM",
+      "displayName": "GenieDailyCharges",
       "queryLines": [
         "-- ToDo: Add filters below\n",
         "SELECT\n",
@@ -41,250 +70,135 @@
         "        or price_end_time >= usage_start_time\n",
         "      )\n",
         "WHERE\n",
-        "  usage_date >= '2026-07-06' -- Genie Pricing Model change\n",
-        "  AND UPPER(billing_origin_product) = 'GENIE'\n",
+        "  usage_date >= '2026-07-06' -- pricing model change\n",
+        "  AND billing_origin_product = 'GENIE'\n",
+        "  AND usage.sku_name != 'GENIE_FREE_USAGE'\n",
+        "  AND (\n",
+        "    array_contains(:workspace_filter, workspace_id)\n",
+        "    OR :workspace_filter IS NULL\n",
+        "  )\n",
         "GROUP BY\n",
-        "  ALL\n",
-        "ORDER BY\n",
-        "  User,\n",
-        "  usage_date DESC"
+        "  ALL"
+      ],
+      "parameters": [
+        {
+          "displayName": "workspace_filter",
+          "keyword": "workspace_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1e162901",
+      "displayName": "GenieDailyAllowance",
+      "queryLines": [
+        "SELECT\n",
+        "  workspace_id,\n",
+        "  sku_name,\n",
+        "  usage_date,\n",
+        "  identity_metadata.run_as User,\n",
+        "  SUM(usage_quantity) LLM_DBUs\n",
+        "FROM\n",
+        "  system.billing.usage usage\n",
+        "WHERE\n",
+        "  usage_date >= '2026-07-20' -- system table SKU change\n",
+        "  AND billing_origin_product = 'GENIE'\n",
+        "  AND usage.sku_name = 'GENIE_FREE_USAGE'\n",
+        "  AND (\n",
+        "    array_contains(:workspace_filter, workspace_id)\n",
+        "    OR :workspace_filter IS NULL\n",
+        "  )\n",
+        "GROUP BY\n",
+        "  ALL"
+      ],
+      "parameters": [
+        {
+          "displayName": "workspace_filter",
+          "keyword": "workspace_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "c1f49f8c",
+      "displayName": "GenieCurrentAllowance",
+      "queryLines": [
+        "SELECT\n",
+        "  identity_metadata.run_as User,\n",
+        "  SUM(usage_quantity)\n",
+        "FROM\n",
+        "  system.billing.usage\n",
+        "WHERE\n",
+        "  usage_date >= DATE_TRUNC('month', current_date())\n",
+        "  AND UPPER(billing_origin_product) = 'GENIE'\n",
+        "  AND UPPER(sku_name) = 'GENIE_FREE_USAGE'\n",
+        "GROUP BY\n",
+        "  ALL"
+      ]
+    }
+  ],
+  "relationshipGraphs": [
+    {
+      "sources": [
+        {
+          "name": "GenieCodeDailyEvents",
+          "datasetName": "8ce8abd2"
+        },
+        {
+          "name": "GenieDailyLLM",
+          "datasetName": "cb77fad0"
+        },
+        {
+          "name": "Workspaces",
+          "datasetName": "5603f28c"
+        },
+        {
+          "name": "Untitled_dataset",
+          "datasetName": "1e162901"
+        },
+        {
+          "name": "Untitled_dataset_1",
+          "datasetName": "c1f49f8c"
+        }
       ]
     }
   ],
   "pages": [
     {
-      "name": "1001fc48",
-      "displayName": "Genie LLM Usage",
+      "name": "fd03f690",
+      "displayName": "Genie Free Allowance",
       "layout": [
         {
           "widget": {
-            "name": "monthy",
+            "name": "64ff9819",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "cb77fad0",
                   "fields": [
                     {
-                      "name": "monthly(usage_date)",
-                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
+                      "name": "sum(Untitled_dataset__LLM_DBUs)",
+                      "expression": "SUM(`Untitled_dataset`.`LLM_DBUs`)"
                     },
                     {
-                      "name": "User",
-                      "expression": "`User`"
+                      "name": "Untitled_dataset__User",
+                      "expression": "`Untitled_dataset`.`User`"
                     },
                     {
-                      "name": "sum(Genie_Cost)",
-                      "expression": "SUM(`Genie_Cost`)"
-                    },
-                    {
-                      "name": "Currency",
-                      "expression": "`Currency`"
-                    },
-                    {
-                      "name": "workspace_id",
-                      "expression": "`workspace_id`"
-                    }
-                  ],
-                  "disaggregated": false,
-                  "orders": [
-                    {
-                      "direction": "ASC",
-                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
-                    },
-                    {
-                      "direction": "ASC",
-                      "expression": "`User`"
-                    },
-                    {
-                      "direction": "ASC",
-                      "expression": "`workspace_id`"
-                    }
-                  ]
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "headerHeight": 61,
-              "headerStyle": {
-                "foregroundColor": {
-                  "themeColorType": "selectionColor"
-                }
-              },
-              "bandedRows": {
-                "enabled": true
-              },
-              "frame": {
-                "showTitle": true,
-                "showDescription": true,
-                "title": "Estimated monthly LLM consumption per user",
-                "description": "Costs are based on (effective) list prices"
-              },
-              "widgetType": "table",
-              "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "monthly(usage_date)",
-                    "useForSearch": false,
-                    "displayName": "Month"
-                  },
-                  {
-                    "fieldName": "User"
-                  },
-                  {
-                    "fieldName": "sum(Genie_Cost)",
-                    "displayName": "Costs"
-                  },
-                  {
-                    "fieldName": "Currency"
-                  },
-                  {
-                    "fieldName": "workspace_id",
-                    "displayName": "Workspace"
-                  }
-                ],
-                "rowOrder": [
-                  {
-                    "by": "column",
-                    "field": {
-                      "index": 0
-                    }
-                  },
-                  {
-                    "by": "column",
-                    "field": {
-                      "index": 1
-                    }
-                  },
-                  {
-                    "by": "column",
-                    "field": {
-                      "index": 4
-                    }
-                  }
-                ]
-              },
-              "data": {
-                "queryName": "main_query"
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 7,
-            "height": 6
-          }
-        },
-        {
-          "widget": {
-            "name": "es",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "cb77fad0",
-                  "fields": [
-                    {
-                      "name": "User",
-                      "expression": "`User`"
-                    },
-                    {
-                      "name": "daily(usage_date)",
-                      "expression": "DATE_TRUNC(\"DAY\", `usage_date`)"
-                    },
-                    {
-                      "name": "Genie_Cost",
-                      "expression": "`Genie_Cost`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "mark": {
-                "layout": "stack"
-              },
-              "frame": {
-                "showTitle": true,
-                "showDescription": true,
-                "title": "Estimated daily LLM costs",
-                "description": "Costs are based on (effective) list prices"
-              },
-              "widgetType": "histogram",
-              "encodings": {
-                "x": {
-                  "fieldName": "daily(usage_date)",
-                  "displayName": "Day",
-                  "scale": {
-                    "type": "categorical"
-                  }
-                },
-                "y": {
-                  "fieldName": "Genie_Cost",
-                  "axis": {
-                    "title": "Costs",
-                    "hideLabels": false,
-                    "hideGrid": false,
-                    "labelAngle": 0
-                  },
-                  "format": {
-                    "type": "number-plain",
-                    "abbreviation": "compact",
-                    "decimalPlaces": {
-                      "type": "max",
-                      "places": 2
-                    }
-                  },
-                  "scale": {
-                    "type": "quantitative"
-                  }
-                },
-                "color": {
-                  "fieldName": "User",
-                  "scale": {
-                    "type": "categorical"
-                  }
-                },
-                "label": {
-                  "show": true
-                }
-              },
-              "data": {
-                "queryName": "main_query"
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 6,
-            "width": 12,
-            "height": 6
-          }
-        },
-        {
-          "widget": {
-            "name": "4dc81e7f",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "cb77fad0",
-                  "fields": [
-                    {
-                      "name": "sum(LLM_DBUs)",
-                      "expression": "SUM(`LLM_DBUs`)"
-                    },
-                    {
-                      "name": "User",
-                      "expression": "`User`"
-                    },
-                    {
-                      "name": "monthly(usage_date)",
-                      "expression": "DATE_TRUNC(\"MONTH\", `usage_date`)"
+                      "name": "monthly(Untitled_dataset__usage_date)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `Untitled_dataset`.`usage_date`)"
                     }
                   ],
                   "disaggregated": false
@@ -294,7 +208,7 @@
             "spec": {
               "facet": {
                 "type": "wrap",
-                "fieldName": "monthly(usage_date)",
+                "fieldName": "monthly(Untitled_dataset__usage_date)",
                 "header": {
                   "hideTitle": true
                 },
@@ -305,13 +219,14 @@
               "version": 3,
               "frame": {
                 "showTitle": true,
-                "showDescription": false,
-                "title": "Estimated monthly LLM DBU consumption per user\n"
+                "showDescription": true,
+                "title": "Recent Months DBU Usage in {{ filter:workspace }} workspace(s)",
+                "description": "Estimated monthly free allowance usage per user"
               },
               "widgetType": "pie",
               "encodings": {
                 "angle": {
-                  "fieldName": "sum(LLM_DBUs)",
+                  "fieldName": "sum(Untitled_dataset__LLM_DBUs)",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -330,7 +245,12 @@
                   "displayName": "DBU Consumption"
                 },
                 "color": {
-                  "fieldName": "User",
+                  "fieldName": "Untitled_dataset__User",
+                  "legend": {
+                    "hideTitle": true,
+                    "hide": false,
+                    "position": "left"
+                  },
                   "scale": {
                     "type": "categorical"
                   }
@@ -338,7 +258,7 @@
                 "label": {
                   "show": true,
                   "text": {
-                    "fieldName": "sum(LLM_DBUs)",
+                    "fieldName": "sum(Untitled_dataset__LLM_DBUs)",
                     "displayName": "DBU Consumption"
                   }
                 }
@@ -349,32 +269,31 @@
             }
           },
           "position": {
-            "x": 7,
-            "y": 0,
-            "width": 5,
+            "x": 6,
+            "y": 1,
+            "width": 6,
             "height": 6
           }
         },
         {
           "widget": {
-            "name": "number-of-assi",
+            "name": "9fbb9d5f",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "8ce8abd2",
                   "fields": [
                     {
-                      "name": "event_date",
-                      "expression": "`event_date`"
+                      "name": "Untitled_dataset__User",
+                      "expression": "`Untitled_dataset`.`User`"
                     },
                     {
-                      "name": "sum(interact_count)",
-                      "expression": "SUM(`interact_count`)"
+                      "name": "daily(Untitled_dataset__usage_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `Untitled_dataset`.`usage_date`)"
                     },
                     {
-                      "name": "initiated_by",
-                      "expression": "`initiated_by`"
+                      "name": "sum(Untitled_dataset__LLM_DBUs)",
+                      "expression": "SUM(`Untitled_dataset`.`LLM_DBUs`)"
                     }
                   ],
                   "disaggregated": false
@@ -382,42 +301,58 @@
               }
             ],
             "spec": {
-              "facet": {
-                "type": "wrap",
-                "fieldName": "initiated_by",
-                "header": {
-                  "title": "User"
-                },
-                "scale": {
-                  "type": "categorical"
-                }
-              },
               "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
               "frame": {
                 "showTitle": true,
-                "title": "Number of daily Genie Code interactions grouped by user",
                 "showDescription": true,
-                "description": "Covers only user-submitted interactions"
+                "title": "Daily DBU Usage in {{ filter:workspace }} workspace(s)",
+                "description": "Estimated daily free allowance usage per user "
               },
               "widgetType": "histogram",
               "encodings": {
                 "x": {
-                  "fieldName": "event_date",
+                  "fieldName": "daily(Untitled_dataset__usage_date)",
                   "axis": {
-                    "title": "Event Date"
+                    "hideLabels": false,
+                    "hideTitle": true
                   },
+                  "displayName": "Day",
                   "scale": {
-                    "type": "temporal"
+                    "type": "categorical"
                   }
                 },
                 "y": {
-                  "fieldName": "sum(interact_count)",
+                  "fieldName": "sum(Untitled_dataset__LLM_DBUs)",
                   "axis": {
-                    "hideTitle": false,
-                    "title": "# interactions"
+                    "title": "# DBUs Used",
+                    "hideLabels": false,
+                    "hideGrid": false,
+                    "labelAngle": 0
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
                   },
                   "scale": {
                     "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Untitled_dataset__User",
+                  "legend": {
+                    "position": "top",
+                    "hideTitle": true,
+                    "hide": false
+                  },
+                  "scale": {
+                    "type": "categorical"
                   }
                 },
                 "label": {
@@ -431,9 +366,355 @@
           },
           "position": {
             "x": 0,
-            "y": 12,
+            "y": 7,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "8666a464",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "Untitled_dataset_1__User",
+                      "expression": "`Untitled_dataset_1`.`User`"
+                    },
+                    {
+                      "name": "Untitled_dataset_1__sum(usage_quantity)",
+                      "expression": "`Untitled_dataset_1`.`sum(usage_quantity)`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "horizontal-line",
+                  "encodings": {
+                    "label": {
+                      "value": "Free Allowance Limit"
+                    },
+                    "color": {
+                      "value": {
+                        "themeColorType": "visualizationColors",
+                        "position": 4
+                      }
+                    },
+                    "y": {
+                      "dataValue": "150",
+                      "dataType": "DECIMAL"
+                    }
+                  }
+                }
+              ],
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": "Current Month DBU Usage",
+                "description": "Estimated free allowance usage per user for this month"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Untitled_dataset_1__User",
+                  "axis": {
+                    "hideTitle": true,
+                    "hideLabels": false
+                  },
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "Untitled_dataset_1__sum(usage_quantity)",
+                  "axis": {
+                    "title": "# DBUs Used ",
+                    "hideGrid": false,
+                    "hideLabels": false,
+                    "hideTitle": false
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "hideGroupSeparator": false
+                  },
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false
+                  }
+                },
+                "label": {
+                  "show": false,
+                  "showTotal": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
             "width": 6,
             "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "51ea0b58",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "GenieCodeDailyEvents__initiated_by",
+                      "expression": "`GenieCodeDailyEvents`.`initiated_by`"
+                    },
+                    {
+                      "name": "GenieCodeDailyEvents__event_date",
+                      "expression": "`GenieCodeDailyEvents`.`event_date`"
+                    },
+                    {
+                      "name": "sum(GenieCodeDailyEvents__interact_count)",
+                      "expression": "SUM(`GenieCodeDailyEvents`.`interact_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Genie Code interactions in {{ filter:workspace }} workspace(s)",
+                "showDescription": true,
+                "description": "Covers only user-submitted interactions"
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "GenieCodeDailyEvents__event_date",
+                  "axis": {
+                    "title": "Event Date",
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(GenieCodeDailyEvents__interact_count)",
+                  "axis": {
+                    "hideTitle": false,
+                    "title": "# interactions"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "GenieCodeDailyEvents__initiated_by",
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "workspace",
+            "queries": [
+              {
+                "name": "dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a84362137d9fc358ed4998dff3_workspace_filter",
+                "query": {
+                  "datasetName": "5603f28c",
+                  "fields": [
+                    {
+                      "name": "workspace_filter",
+                      "expression": "`workspace_filter`"
+                    },
+                    {
+                      "name": "workspace_filter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213bda8ce43eb9d67a227_workspace_filter",
+                "query": {
+                  "datasetName": "8ce8abd2",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213d5a29a3cd0254925ea_workspace_filter",
+                "query": {
+                  "datasetName": "1e162901",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213cd85ccfc4aebf5cfe3_workspace_filter",
+                "query": {
+                  "datasetName": "cb77fad0",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Workspace IDs"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "workspace_filter",
+                    "queryName": "dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a84362137d9fc358ed4998dff3_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213bda8ce43eb9d67a227_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213d5a29a3cd0254925ea_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213cd85ccfc4aebf5cfe3_workspace_filter"
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#FFEFD8"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "33009d02",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"font-size:12px\">Genie Free Allowance LLM usage before 20/07/26 is not covered by this page due do system table limitations. Made by https://www.linkedin.com/in/bigdatadude/</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 1
           }
         }
       ],
@@ -444,6 +725,521 @@
       "name": "e62cf813",
       "displayName": "Global Filters",
       "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "1001fc48",
+      "displayName": "Genie Token Costs",
+      "layout": [
+        {
+          "widget": {
+            "name": "monthy",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "monthly(GenieDailyLLM__usage_date)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `GenieDailyLLM`.`usage_date`)"
+                    },
+                    {
+                      "name": "GenieDailyLLM__User",
+                      "expression": "`GenieDailyLLM`.`User`"
+                    },
+                    {
+                      "name": "sum(GenieDailyLLM__Genie_Cost)",
+                      "expression": "SUM(`GenieDailyLLM`.`Genie_Cost`)"
+                    },
+                    {
+                      "name": "GenieDailyLLM__Currency",
+                      "expression": "`GenieDailyLLM`.`Currency`"
+                    }
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "DATE_TRUNC(\"MONTH\", `GenieDailyLLM`.`usage_date`)"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`GenieDailyLLM`.`User`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "headerHeight": 61,
+              "headerStyle": {
+                "foregroundColor": {
+                  "themeColorType": "selectionColor"
+                }
+              },
+              "bandedRows": {
+                "enabled": true
+              },
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Estimated monthly costs in {{ filter:workspace-id }} workspace(s)"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "monthly(GenieDailyLLM__usage_date)",
+                    "useForSearch": false,
+                    "displayName": "Month"
+                  },
+                  {
+                    "fieldName": "GenieDailyLLM__User"
+                  },
+                  {
+                    "fieldName": "sum(GenieDailyLLM__Genie_Cost)",
+                    "contentAlignment": "left",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "displayName": "Costs",
+                    "style": {
+                      "type": "basic",
+                      "bold": true,
+                      "backgroundColor": {
+                        "themeColorType": "visualizationColors",
+                        "position": 8
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "GenieDailyLLM__Currency"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column",
+                    "field": {
+                      "index": 0
+                    }
+                  },
+                  {
+                    "by": "column",
+                    "field": {
+                      "index": 1
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "4dc81e7f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "sum(GenieDailyLLM__LLM_DBUs)",
+                      "expression": "SUM(`GenieDailyLLM`.`LLM_DBUs`)"
+                    },
+                    {
+                      "name": "GenieDailyLLM__User",
+                      "expression": "`GenieDailyLLM`.`User`"
+                    },
+                    {
+                      "name": "monthly(GenieDailyLLM__usage_date)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `GenieDailyLLM`.`usage_date`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "monthly(GenieDailyLLM__usage_date)",
+                "header": {
+                  "hideTitle": true
+                },
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Estimated monthly billed LLM DBU consumption in {{ filter:workspace-id }} workspace(s)\n"
+              },
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(GenieDailyLLM__LLM_DBUs)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "hideGroupSeparator": false
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "displayName": "DBU Consumption"
+                },
+                "color": {
+                  "fieldName": "GenieDailyLLM__User",
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true,
+                  "text": {
+                    "fieldName": "sum(GenieDailyLLM__LLM_DBUs)",
+                    "displayName": "DBU Consumption"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "8e85c9bd",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "GenieDailyLLM__User",
+                      "expression": "`GenieDailyLLM`.`User`"
+                    },
+                    {
+                      "name": "daily(GenieDailyLLM__usage_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `GenieDailyLLM`.`usage_date`)"
+                    },
+                    {
+                      "name": "sum(GenieDailyLLM__Genie_Cost)",
+                      "expression": "SUM(`GenieDailyLLM`.`Genie_Cost`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Estimated daily LLM costs per user in {{ filter:workspace-id }} workspace(s) ",
+                "description": "Costs are based on (effective) list prices"
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(GenieDailyLLM__usage_date)",
+                  "axis": {
+                    "hideTitle": true,
+                    "hideLabels": false
+                  },
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(GenieDailyLLM__Genie_Cost)",
+                  "axis": {
+                    "title": "Costs",
+                    "hideLabels": false,
+                    "hideGrid": false,
+                    "labelAngle": 0
+                  },
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "hideGroupSeparator": false
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "GenieDailyLLM__User",
+                  "legend": {
+                    "position": "top"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "1ab6465c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "GenieCodeDailyEvents__initiated_by",
+                      "expression": "`GenieCodeDailyEvents`.`initiated_by`"
+                    },
+                    {
+                      "name": "GenieCodeDailyEvents__event_date",
+                      "expression": "`GenieCodeDailyEvents`.`event_date`"
+                    },
+                    {
+                      "name": "sum(GenieCodeDailyEvents__interact_count)",
+                      "expression": "SUM(`GenieCodeDailyEvents`.`interact_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Genie Code interactions in {{ filter:workspace-id }} workspace(s)",
+                "showDescription": true,
+                "description": "Covers only user-submitted interactions"
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "GenieCodeDailyEvents__event_date",
+                  "axis": {
+                    "title": "Event Date",
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(GenieCodeDailyEvents__interact_count)",
+                  "axis": {
+                    "hideTitle": false,
+                    "title": "# interactions"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "GenieCodeDailyEvents__initiated_by",
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "workspace-id",
+            "queries": [
+              {
+                "name": "dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a84362137d9fc358ed4998dff3_workspace_filter",
+                "query": {
+                  "datasetName": "5603f28c",
+                  "fields": [
+                    {
+                      "name": "workspace_filter",
+                      "expression": "`workspace_filter`"
+                    },
+                    {
+                      "name": "workspace_filter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213d5a29a3cd0254925ea_workspace_filter",
+                "query": {
+                  "datasetName": "1e162901",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213cd85ccfc4aebf5cfe3_workspace_filter",
+                "query": {
+                  "datasetName": "cb77fad0",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213bda8ce43eb9d67a227_workspace_filter",
+                "query": {
+                  "datasetName": "8ce8abd2",
+                  "parameters": [
+                    {
+                      "name": "workspace_filter",
+                      "keyword": "workspace_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Workspace IDs"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "workspace_filter",
+                    "queryName": "dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a84362137d9fc358ed4998dff3_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213d5a29a3cd0254925ea_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213cd85ccfc4aebf5cfe3_workspace_filter"
+                  },
+                  {
+                    "parameterName": "workspace_filter",
+                    "queryName": "parameter_dashboards/01f17d57a3c41ba296f0a27ba3fc8140/datasets/01f187a8436213bda8ce43eb9d67a227_workspace_filter"
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#FFEFD8"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "1f60d39b",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"font-size:12px\">All token cost estimations on this page are based on (effective) list prices, associated compute costs are not covered and will be added soon. Made by https://www.linkedin.com/in/bigdatadude/</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
       "layoutVersion": "GRID_V1"
     }
   ],

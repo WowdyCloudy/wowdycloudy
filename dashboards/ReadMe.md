@@ -1,6 +1,12 @@
 # Usage Dashboards
+The first version of the [ai-assistant-usage.lvdash.json](./ai-assistant-usage.lvdash.json) dashboard was published on 
+the 8th of July 2026, some of its current widgets are depicted in the screenshots below. Additional functionality will
+be added soon.
 
-## Sample Screenshot
+### Free Allowance Page Screenshot
+![image](./AllowanceScreenshot.png)
+
+### Token Costs Page Screenshot
 ![image](./DashboardScreenshot.png)
 
 ## Prerequisites
@@ -19,3 +25,6 @@ a local file on your computer with a similar naming pattern.
 In a Databricks workspace, open the **Dashboards** tab on the left sidebar. Click on the "Create dashboard" button 
 (right arrow) in the top right corner and then on "Import dashboard from file". An import window open up, choose the 
 JSON file that was just created.
+
+## Materialization strategies
+Coming soon
