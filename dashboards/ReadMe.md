@@ -1,12 +1,24 @@
 # Usage Dashboards
-The first version of the [ai-assistant-usage.lvdash.json](./ai-assistant-usage.lvdash.json) dashboard was published on 
-the 8th of July 2026, some of its current widgets are depicted in the screenshots below. Additional functionality will
-be added soon.
+The first version of the [ai-assistant-usage.lvdash.json](./ai-assistant-usage.lvdash.json) dashboard for Genie was 
+published on the 8th of July 2026, some of its current widgets are depicted in the screenshots below.
+Additional functionality will be added soon.
 
-### Free Allowance Page Screenshot
+The following filters are available across all pages:
+- Workspace ID: Scope to one or more workspace(s)
+- Date Range: Restrict the time window for daily and monhtly charts
+- Genie Interface: Filter by surface GENIE_CODE, GENIE_AGENTS, or GENIE_ONE
+
+The dashboard consists of the following pages:
+
+**Genie Interfaces**: Detailed breakdown across Genie Code, Genie Agents, and Genie One including per-surface pivot totals, 
+top users by token cost, agent-level consumption, and daily interaction counts.
+![image](./InterfacesScreenshot.png)
+
+**Free Allowance**: Tracks daily and monthly consumption of the free LLM DBU allowance per user and Genie interface. Includes current-month
+usage against the 150 DBU/user limit for Genie Code.
 ![image](./AllowanceScreenshot.png)
 
-### Token Costs Page Screenshot
+**Token Costs**: Shows paid LLM token costs by user, workspace, and interface on daily and monthly granularity.
 ![image](./DashboardScreenshot.png)
 
 ## Prerequisites
@@ -23,7 +35,7 @@ Download the JSON file [ai-assistant-usage.lvdash.json](./ai-assistant-usage.lvd
 a local file on your computer with a similar naming pattern. 
 
 In a Databricks workspace, open the **Dashboards** tab on the left sidebar. Click on the "Create dashboard" button 
-(right arrow) in the top right corner and then on "Import dashboard from file". An import window open up, choose the 
+(right arrow) in the top right corner and then on "Import dashboard from file". An import window opens, choose the 
 JSON file that was just created.
 
 ## Materialization strategies
